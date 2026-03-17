@@ -1,0 +1,12 @@
+[package]
+name = "RustyChatAPI"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+axum = "0.8"
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "macros", "chrono"] }
+serde = { version = "1", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+dotenvy = {version = "0.15.7"}
