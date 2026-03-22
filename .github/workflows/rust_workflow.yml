@@ -33,7 +33,7 @@ jobs:
 
     steps:
     - name: List files before migrations
-      run: ls -la && ls -la migrations/
+      run: ls -la && ls -la /
     - name: Check current directory and files
       run: |
         pwd
