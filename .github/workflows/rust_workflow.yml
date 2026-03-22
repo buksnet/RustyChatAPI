@@ -32,18 +32,20 @@ jobs:
           --health-retries 5
 
     steps:
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-
-    - name: Install sqlx-cli
-      run: cargo install sqlx-cli
-
-    - name: Run migrations
-      run: cd $GITHUB_WORKSPACE && sqlx migrate run
-      env:
-        DATABASE_URL: ${{ env.DATABASE_URL }}
-
-    - name: Build
-      run: cargo build --release
+    - name: List files before migrations
+      run: ls -la && ls -la migrations/
+#    - name: Install Rust
+#      uses: actions-rs/toolchain@v1
+#      with:
+#        toolchain: stable
+#
+#    - name: Install sqlx-cli
+#      run: cargo install sqlx-cli
+#
+#    - name: Run migrations
+#      run: cd $GITHUB_WORKSPACE && sqlx migrate run
+#      env:
+#        DATABASE_URL: ${{ env.DATABASE_URL }}
+#
+#    - name: Build
+#      run: cargo build --release
