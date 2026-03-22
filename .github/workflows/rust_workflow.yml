@@ -40,8 +40,11 @@ jobs:
     - name: Install sqlx-cli
       run: cargo install sqlx-cli
 
+    - name: Print out path
+      run: realpath .
+
     - name: Run migrations
-      run: cd .. && sqlx migrate run
+      run: cd ./../ && sqlx migrate run
 
       env:
         DATABASE_URL: ${{ env.DATABASE_URL }}
