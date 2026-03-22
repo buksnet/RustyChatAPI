@@ -34,6 +34,11 @@ jobs:
     steps:
     - name: List files before migrations
       run: ls -la && ls -la migrations/
+    - name: Check current directory and files
+      run: |
+        pwd
+        ls -la
+        find . -name "*.sql" -type f
 #    - name: Install Rust
 #      uses: actions-rs/toolchain@v1
 #      with:
