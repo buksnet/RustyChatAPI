@@ -42,6 +42,7 @@ jobs:
 
     - name: Run migrations
       run: sqlx migrate run
+      working-directory: .
       env:
         DATABASE_URL: ${{ env.DATABASE_URL }}
 
