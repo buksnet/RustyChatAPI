@@ -1,0 +1,7 @@
+BEGIN;
+ALTER TABLE IF EXISTS messenger.users
+    DROP COLUMN permissions;
+DROP TYPE IF EXISTS USER_PERMISSION;
+DROP TABLE IF EXISTS messenger.chat_moderators;
+
+COMMIT;

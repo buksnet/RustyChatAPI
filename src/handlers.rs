@@ -1,10 +1,56 @@
-use axum::{Json};
-use chrono::Utc;
-use crate::models::Message;
+use crate::AppState;
+use crate::error::AppError;
+use crate::models::{
+    MessageCreationData,
+    ChatWithLastMessage,
+    MsgPaginatorQuery,
+    ChatCreationData,
+    Fetcher,
+    Message, 
+};
+use crate::repositories::chat::{
+    get_chats_with_last_message,
+    get_messages_for_user,
+    create_new_message,
+    create_new_chat,
+};
+use axum::Json;
+use axum::extract::{Query, State};
+use axum::http::StatusCode;
+use serde_json::{Value, json};
 
+pub async fn get_chats(
+    State(state): State<AppState>,
+    query: Query<Fetcher>,
+) -> Result<Json<Vec<ChatWithLastMessage>>, AppError> {
+    let user_id = query.id;
+    let chats = get_chats_with_last_message(&state.db, user_id).await?;
+    Ok(Json(chats))
+}
 
-pub async fn get_messages() -> Json<Vec<Message>> {
-    Json(vec![
-        Message { id: 0, content: "Hello bruv!".into(), created_at: Utc::now() },
-    ])
+pub async fn new_chat(
+    State(state): State<AppState>,
+    Json(chat_data): Json<ChatCreationData>,
+) -> Result<(StatusCode, Json<Value>), AppError> {
+    assert!(chat_data.participants.len() >= 1);
+    let db_response = create_new_chat(&state.db, chat_data).await?;
+    Ok(db_response)
+}
+
+pub async fn new_message(
+    State(state): State<AppState>,
+    Json(message_data): Json<MessageCreationData>,
+) -> Result<(StatusCode, Json<Value>), AppError> {
+    let msg_id = create_new_message(&state.db, message_data).await?;
+    Ok((StatusCode::CREATED, Json(json!({"status": "success"}))))
+}
+
+pub async fn fetch_messages(
+    State(state): State<AppState>,
+    Query(query): Query<MsgPaginatorQuery>,
+) -> Result<(StatusCode, Json<Vec<Message>>), AppError> {
+    Ok((
+        StatusCode::OK,
+        Json(get_messages_for_user(&state.db, query).await?),
+    ))
 }

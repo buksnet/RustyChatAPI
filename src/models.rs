@@ -1,14 +1,69 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-#[derive(Deserialize)]
-pub struct CreateMessage {
-    pub content: String,
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct Fetcher {
+    pub id: i32,
+    pub token: Option<String>,
 }
 
-#[derive(Serialize, FromRow)]
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct MessageCreationData {
+    pub author: i32,
+    pub chat_id: i32,
+    pub content: String,
+    pub token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
 pub struct Message {
     pub id: i32,
+    pub chat_id: i32,
+    pub author: i32,
     pub content: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub is_edited: bool,
+    pub time_created: chrono::NaiveDateTime,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct ChatCreationData {
+    pub title: Option<String>,
+    pub image_url: Option<String>,
+    pub participants: Vec<i32>,
+    pub author: i32,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct ChatWithLastMessage {
+    pub chat_id: i32,
+    pub title: Option<String>,
+    pub chat_created_at: chrono::NaiveDateTime,
+    pub message_id: Option<i32>,
+    pub sender_id: Option<i32>,
+    pub last_message: Option<String>,
+    pub message_created_at: Option<chrono::NaiveDateTime>,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct MsgPaginatorQuery {
+    pub user_id: i32,
+    pub chat_id: i32,
+
+    pub page_number: i32,
+    pub limit: i64,
+    pub offset: i64,
+    pub token: String,
+
+    // TODO: <future> Добавить систему пейджинации по id последнего сообщения
+    pub before: Option<i32>,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct Paginator {
+    pub page: i32,
+    pub limit: i64,
+    pub offset: i64,
+    
+    // TODO: <future> Добавить систему пейджинации по id последнего сообщения
+    pub before: Option<i32>,
 }

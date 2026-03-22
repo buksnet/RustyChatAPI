@@ -1,0 +1,2 @@
+ALTER TABLE messenger.messages
+    ADD COLUMN is_edited BOOLEAN NOT NULL DEFAULT FALSE;
