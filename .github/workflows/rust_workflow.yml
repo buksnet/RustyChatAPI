@@ -41,7 +41,7 @@ jobs:
       run: cargo install sqlx-cli
 
     - name: Run migrations
-      run: cd /home/runner/work/RustyChatAPI/RustyChatAPI && sqlx migrate run
+      run: cd .. && sqlx migrate run
 
       env:
         DATABASE_URL: ${{ env.DATABASE_URL }}
