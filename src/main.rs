@@ -18,6 +18,9 @@ struct AppState {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = db::create_pool().await?;
+
+    sqlx::migrate!().run(&pool).await?;
+
     let app = Router::new()
         .route("/chats", get(handlers::get_chats))
         .route("/chats", post(handlers::new_chat))
