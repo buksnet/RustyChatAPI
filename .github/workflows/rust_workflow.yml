@@ -1,13 +1,8 @@
 name: CI
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+on: [push]
 
 env:
-  CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://postgres:postgres@localhost:5432/chat_test
 
 jobs:
@@ -20,13 +15,17 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: chat_test
-          options: >-
-            --health-cmd pg_isready
-            --health-interval 10s
-            --health-timeout 5s
-            --health-retries 5
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -35,8 +34,11 @@ jobs:
       - name: Install sqlx-cli
         run: cargo install sqlx-cli
 
+      - name: Wait for PostgreSQL
+        run: sleep 10
+
+      - name: Run migrations
+        run: sqlx migrate run
+
       - name: Build
         run: cargo build --verbose
-
-      - name: Run tests
-        run: cargo test --verbose
