@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/chats", get(handlers::get_chats))
         .route("/chats", post(handlers::new_chat))
-        //.route("/messages", get(handlers::fetch_messages))
+        .route("/messages", get(handlers::fetch_messages))
         .route("/messages", post(handlers::new_message))
         .with_state(AppState { db: pool });
 
