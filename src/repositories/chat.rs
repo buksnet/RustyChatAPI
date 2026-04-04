@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{ChatCreationData, ChatWithLastMessage, Message, MessageCreationData, MsgPaginatorQuery, Paginator};
+use crate::models::{ChatCreationData, ChatWithLastMessage, Message, MessageCreationData, MsgPaginatorQuery};
 use axum::Json;
 use axum::http::StatusCode;
 use serde_json::json;
@@ -35,13 +35,13 @@ pub async fn get_chats_with_last_message(
         SELECT
             uc.chat_id,
             uc.title,
+            u.name AS last_message_author,
             uc.chat_created_at,
-            lm.message_id,
-            lm.sender_id,
             lm.content AS last_message,
             lm.message_created_at
         FROM user_chats uc
         LEFT JOIN last_messages lm ON lm.chat_id = uc.chat_id
+        LEFT JOIN messenger.users u ON lm.sender_id = u.id
         "#,
         user_id
     )

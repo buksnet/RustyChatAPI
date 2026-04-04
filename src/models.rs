@@ -37,9 +37,8 @@ pub struct ChatCreationData {
 pub struct ChatWithLastMessage {
     pub chat_id: i32,
     pub title: Option<String>,
+    pub last_message_author: Option<String>,
     pub chat_created_at: chrono::NaiveDateTime,
-    pub message_id: Option<i32>,
-    pub sender_id: Option<i32>,
     pub last_message: Option<String>,
     pub message_created_at: Option<chrono::NaiveDateTime>,
 }

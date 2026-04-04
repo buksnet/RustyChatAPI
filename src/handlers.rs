@@ -42,7 +42,7 @@ pub async fn new_message(
     Json(message_data): Json<MessageCreationData>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
     let msg_id = create_new_message(&state.db, message_data).await?;
-    Ok((StatusCode::CREATED, Json(json!({"status": "success"}))))
+    Ok((StatusCode::CREATED, Json(json!({"status": "success", "new_message_id": msg_id}))))
 }
 
 pub async fn fetch_messages(
