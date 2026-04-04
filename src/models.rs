@@ -19,7 +19,8 @@ pub struct MessageCreationData {
 pub struct Message {
     pub id: i32,
     pub chat_id: i32,
-    pub author: i32,
+    pub author_id: i32,
+    pub author: String,
     pub content: String,
     pub is_edited: bool,
     pub time_created: chrono::NaiveDateTime,

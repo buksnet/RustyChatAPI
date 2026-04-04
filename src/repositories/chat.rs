@@ -129,9 +129,17 @@ pub async fn get_messages_for_user(
     let messages = query_as!(
         Message,
         r#"
-        SELECT m.id, m.chat_id, m.sender_id AS author, m.content, m.created_at AS time_created, m.is_edited
+        SELECT
+            m.id,
+            m.chat_id,
+            m.sender_id AS author_id,
+            u.name AS author,
+            m.content,
+            m.created_at AS time_created,
+            m.is_edited
         FROM messenger.messages m
-        JOIN messenger.chat_participants cp ON cp.chat_id = m.chat_id
+        INNER JOIN messenger.chat_participants cp ON cp.chat_id = m.chat_id
+        INNER JOIN messenger.users u ON u.id = m.sender_id
         WHERE m.chat_id = $1 AND cp.user_id = $2
         ORDER BY m.created_at DESC
         LIMIT $3 OFFSET $4
