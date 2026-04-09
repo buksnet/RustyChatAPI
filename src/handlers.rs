@@ -1,18 +1,9 @@
 use crate::AppState;
 use crate::error::AppError;
-use crate::models::{
-    MessageCreationData,
-    ChatWithLastMessage,
-    MsgPaginatorQuery,
-    ChatCreationData,
-    Fetcher,
-    Message, 
-};
+use crate::models::{ChatCreationData, ChatWithLastMessage, Fetcher, LoginData, Message, MessageCreationData, MsgPaginatorQuery, RegisterData};
+use crate::repositories::auth::{get_new_token, register_new_user};
 use crate::repositories::chat::{
-    get_chats_with_last_message,
-    get_messages_for_user,
-    create_new_message,
-    create_new_chat,
+    create_new_chat, create_new_message, get_chats_with_last_message, get_messages_for_user,
 };
 use axum::Json;
 use axum::extract::{Query, State};
@@ -42,7 +33,10 @@ pub async fn new_message(
     Json(message_data): Json<MessageCreationData>,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
     let msg_id = create_new_message(&state.db, message_data).await?;
-    Ok((StatusCode::CREATED, Json(json!({"status": "success", "new_message_id": msg_id}))))
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({"status": "success", "new_message_id": msg_id})),
+    ))
 }
 
 pub async fn fetch_messages(
@@ -53,4 +47,18 @@ pub async fn fetch_messages(
         StatusCode::OK,
         Json(get_messages_for_user(&state.db, query).await?),
     ))
+}
+
+pub async fn login(
+    State(state): State<AppState>,
+    Json(message_data): Json<LoginData>,
+) -> Result<(StatusCode, Json<Value>), AppError> {
+    get_new_token(&state.db, message_data).await
+}
+
+pub async fn register(
+    State(state): State<AppState>,
+    Json(message_data): Json<RegisterData>,
+) -> Result<(StatusCode, Json<Value>), AppError>{
+    register_new_user(&state.db, message_data).await
 }

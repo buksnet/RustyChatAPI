@@ -148,5 +148,4 @@ pub async fn get_messages_for_user(
     ).fetch_all(pool)
         .await?;
     Ok(messages)
-
 }

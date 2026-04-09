@@ -67,3 +67,23 @@ pub struct Paginator {
     // TODO: <future> Добавить систему пейджинации по id последнего сообщения
     pub before: Option<i32>,
 }
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct RegisterData{
+    pub username: String,
+    pub email: String,
+    pub tag: Option<String>, // Опционален, но будет генерироваться уникальный тег при пустом поле
+    pub password: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct LoginData{
+    pub username: String, // может быть email или tag
+    pub password: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: i32, // user_id
+    pub exp: usize, // срок действия
+}
