@@ -33,9 +33,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         .route("/auth/login", post(handlers::login))
         .route("/auth/register", post(handlers::register))
-        
+
         // статические файлы
-        .route("/rustychat/app", get_service(ServeFile::new("static/rustychat.apk")))
+        .route("/app/download", get_service(ServeFile::new("static/rustychat.apk")))
 
         .with_state(AppState { db: pool });
 

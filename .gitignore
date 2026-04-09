@@ -90,3 +90,6 @@ http-client.private.env.json
 
 # Build directories
 /target
+
+# App files
+/static/*.apk
