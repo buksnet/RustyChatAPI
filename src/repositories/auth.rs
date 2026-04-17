@@ -13,70 +13,107 @@ pub async fn get_new_token(
     pool: &PgPool,
     user_data: LoginData,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
-    let regex = RegexBuilder::new("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@a-zA-Z0-9?(?:.a-zA-Z0-9?)*$")
+    let regex = RegexBuilder::new("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
         .build()
         .unwrap();
 
-    // если формат переданного username - email
-    let is_user_data_correct: bool;
-    let usr_id: i32;
-    let usr_pwd_hash: String;
-    if regex.is_match(&user_data.username) {
+    // Определяем, ищем по email или по tag
+    let (usr_id, usr_pwd_hash) = if regex.is_match(&user_data.username) {
         let usr = query!(
-            r#"
-        SELECT id, pwd_hash FROM messenger.users
-        WHERE email = $1
-        "#,
+            "SELECT id, pwd_hash FROM messenger.users WHERE email = $1",
             &user_data.username
         )
-        .fetch_one(pool)
-        .await?;
-        usr_id = usr.id;
-        usr_pwd_hash = usr.pwd_hash;
+            .fetch_optional(pool)
+            .await?;
+
+        match usr {
+            Some(user) => (user.id, user.pwd_hash),
+            None => return Ok((StatusCode::NOT_FOUND, Json(json!({"status": "user not found"})))),
+        }
     } else {
         let usr = query!(
-            r#"
-        SELECT id, pwd_hash FROM messenger.users
-        WHERE tag = $1
-        "#,
+            "SELECT id, pwd_hash FROM messenger.users WHERE tag = $1",
             &user_data.username
         )
-        .fetch_one(pool)
-        .await?;
-        usr_id = usr.id;
-        usr_pwd_hash = usr.pwd_hash;
-    }
-    if verify_password(&usr_pwd_hash, &user_data.password)? {
-        is_user_data_correct = true;
-    } else {
-        is_user_data_correct = false;
-    }
-    if is_user_data_correct {
-        let secret = std::env::var("JWT_SECRET").expect("SECRET_KEY must be set");
-        let claims = Claims {
-            sub: usr_id, // надо достать id из запроса в БД
-            exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
-        };
-        let token = encode(
-            &Header::default(),
-            &claims,
-            &EncodingKey::from_secret(secret.as_ref()),
-        )
-        .unwrap();
-        Ok((StatusCode::OK, Json(json!({"token": token}))))
-    } else {
-        Ok((
+            .fetch_optional(pool)
+            .await?;
+
+        match usr {
+            Some(user) => (user.id, user.pwd_hash),
+            None => return Ok((StatusCode::NOT_FOUND, Json(json!({"status": "user not found"})))),
+        }
+    };
+
+    // Проверяем пароль
+    if !verify_password(&usr_pwd_hash, &user_data.password)? {
+        return Ok((
             StatusCode::FORBIDDEN,
             Json(json!({"status": "error", "description": "wrong credentials"})),
-        ))
+        ));
     }
+
+    // Генерируем токен
+    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let claims = Claims {
+        sub: usr_id,
+        exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
+    };
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+        .map_err(|_| AppError::InternalServerError)?;
+
+    Ok((StatusCode::OK, Json(json!({"token": token}))))
 }
 
 pub async fn register_new_user(
     pool: &PgPool,
     user_data: RegisterData,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
-    // TODO: Валидация данных (в частности сложности пароля)
+    // 1. Проверяем, не занят ли email
+    let email_exists = query!(
+        "SELECT id FROM messenger.users WHERE email = $1",
+        user_data.email
+    )
+        .fetch_optional(pool)
+        .await?
+        .is_some();
+
+    if email_exists {
+        return Ok((
+            StatusCode::CONFLICT,
+            Json(json!({"status": "error", "field": "email", "message": "email already exists"})),
+        ));
+    }
+
+    // 2. Если tag передан — проверяем, не занят ли он
+    if let Some(tag) = &user_data.tag {
+        let tag_exists = query!(
+            "SELECT id FROM messenger.users WHERE tag = $1",
+            tag
+        )
+            .fetch_optional(pool)
+            .await?
+            .is_some();
+
+        if tag_exists {
+            return Ok((
+                StatusCode::CONFLICT,
+                Json(json!({"status": "error", "field": "tag", "message": "tag already taken"})),
+            ));
+        }
+    }
+
+    // 3. Валидация пароля
+    if user_data.password.len() < 8 {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(json!({"status": "error", "field": "password", "message": "password too short, minimum 8 characters"})),
+        ));
+    }
+
     let password_hash = hash_string(&user_data.password).await?;
 
     let mut tag_gen = TagGenerator::new();
@@ -84,7 +121,7 @@ pub async fn register_new_user(
 
     let tag = user_data.tag.as_deref().unwrap_or(&alt_tag);
 
-    tag_gen.clear(); // очистка памяти от списка слов
+
 
     let usr = query!(
         r#"
@@ -94,14 +131,30 @@ pub async fn register_new_user(
         "#,
         &user_data.username,
         &user_data.email,
-        tag,
+        &tag,
         &password_hash
     )
     .fetch_one(pool)
     .await?;
 
+    tag_gen.clear(); // очистка памяти от списка слов
+
+    // Генерируем токен
+    let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let claims = Claims {
+        sub: usr.id,
+        exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
+    };
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_ref()),
+    )
+        .map_err(|_| AppError::InternalServerError)?;
+
+
     Ok((
         StatusCode::CREATED,
-        Json(json!({"status": "success", "id": usr.id})),
+        Json(json!({"status": "success", "id": usr.id, "token": token})),
     ))
 }

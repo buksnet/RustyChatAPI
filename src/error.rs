@@ -9,6 +9,7 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
+        eprintln!("AppError: {:?}", self);
         match self {
             AppError::Database(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             AppError::NotFound => StatusCode::NOT_FOUND.into_response(),
