@@ -93,3 +93,7 @@ http-client.private.env.json
 
 # App files
 /static/*.apk
+
+.idea/*
+
+pgAdminSchemes/*
