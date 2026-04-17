@@ -3,13 +3,11 @@ use sqlx::FromRow;
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
 pub struct Fetcher {
-    pub id: i32,
     pub token: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
 pub struct MessageCreationData {
-    pub author: i32,
     pub chat_id: i32,
     pub content: String,
     pub token: String,
@@ -31,7 +29,6 @@ pub struct ChatCreationData {
     pub title: Option<String>,
     pub image_url: Option<String>,
     pub participants: Vec<i32>,
-    pub author: i32,
 }
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
@@ -46,7 +43,6 @@ pub struct ChatWithLastMessage {
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
 pub struct MsgPaginatorQuery {
-    pub user_id: i32,
     pub chat_id: i32,
 
     pub page_number: i32,

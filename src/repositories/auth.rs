@@ -56,7 +56,7 @@ pub async fn get_new_token(
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let claims = Claims {
         sub: usr_id,
-        exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
+        exp: (chrono::Utc::now() + chrono::Duration::days(30)).timestamp() as usize,
     };
     let token = encode(
         &Header::default(),
@@ -112,6 +112,7 @@ pub async fn register_new_user(
             StatusCode::BAD_REQUEST,
             Json(json!({"status": "error", "field": "password", "message": "password too short, minimum 8 characters"})),
         ));
+        // TODO: Проверка сложности пароля
     }
 
     let password_hash = hash_string(&user_data.password).await?;
@@ -143,7 +144,7 @@ pub async fn register_new_user(
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let claims = Claims {
         sub: usr.id,
-        exp: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp() as usize,
+        exp: (chrono::Utc::now() + chrono::Duration::days(30)).timestamp() as usize,
     };
     let token = encode(
         &Header::default(),
@@ -151,7 +152,6 @@ pub async fn register_new_user(
         &EncodingKey::from_secret(secret.as_ref()),
     )
         .map_err(|_| AppError::InternalServerError)?;
-
 
     Ok((
         StatusCode::CREATED,
