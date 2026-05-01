@@ -32,6 +32,13 @@ pub struct ChatCreationData {
 }
 
 #[derive(Debug, Deserialize, Serialize, FromRow)]
+pub struct ChatEditData {
+    pub id: i32,
+    pub title: Option<String>,
+    pub image_url: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
 pub struct ChatWithLastMessage {
     pub chat_id: i32,
     pub title: Option<String>,

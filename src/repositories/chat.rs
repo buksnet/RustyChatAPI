@@ -1,9 +1,13 @@
 use crate::error::AppError;
-use crate::models::{ChatCreationData, ChatWithLastMessage, Message, MessageCreationData, MsgPaginatorQuery};
-use axum::http::StatusCode;
+use crate::models::{
+    ChatCreationData, ChatEditData, ChatWithLastMessage, Message, MessageCreationData,
+    MsgPaginatorQuery,
+};
 use axum::Json;
+use axum::http::StatusCode;
 use serde_json::json;
-use sqlx::{query, query_as, PgPool};
+use sqlx::{PgPool, query, query_as};
+use crate::utils::utils::is_moderator;
 
 pub async fn get_chats_with_last_message(
     pool: &PgPool,
@@ -62,7 +66,7 @@ pub async fn get_chats_with_last_message(
 pub async fn create_new_chat(
     pool: &PgPool,
     data: ChatCreationData,
-    user_id: i32
+    user_id: i32,
 ) -> Result<(StatusCode, Json<serde_json::Value>), AppError> {
     let new_chat = query!(
         r#"
@@ -104,10 +108,64 @@ pub async fn create_new_chat(
     Ok((StatusCode::CREATED, Json(json!({"status": "success"}))))
 }
 
+pub async fn edit_chat_data(
+    pool: &PgPool,
+    data: ChatEditData,
+    chat_id: i32,
+    user_id: i32,
+) -> Result<(StatusCode, Json<serde_json::Value>), AppError> {
+
+    if is_moderator(&pool, &user_id, &chat_id).await? {
+        query!(
+            r#"
+        UPDATE messenger.chats
+        SET title = $2
+        WHERE id = $1
+        "#,
+            chat_id,
+            data.title
+        )
+        .execute(pool)
+        .await?;
+        // TODO: Добавить обновление изображения
+        Ok((StatusCode::OK, Json(json!({"status": "success"}))))
+    } else {
+        Ok((
+            StatusCode::FORBIDDEN,
+            Json(json!({"status": "failed", "message": "insufficient permission to edit"})),
+        ))
+    }
+}
+
+pub async fn remove_chat(
+    pool: &PgPool,
+    chat_id: i32,
+    user_id: i32,
+) -> Result<(StatusCode, Json<serde_json::Value>), AppError> {
+
+    if is_moderator(&pool, &user_id, &chat_id).await? {
+        query!(
+            r#"
+            DELETE FROM messenger.chats
+            WHERE id = $1
+            "#,
+            chat_id
+        )
+        .execute(pool)
+        .await?;
+        Ok((StatusCode::OK, Json(json!({"status": "success"}))))
+    } else {
+        Ok((
+            StatusCode::FORBIDDEN,
+            Json(json!({"status": "failed", "message": "insufficient permission to edit"})),
+        ))
+    }
+}
+
 pub async fn create_new_message(
     pool: &PgPool,
     msg_data: MessageCreationData,
-    user_id: i32
+    user_id: i32,
 ) -> Result<i32, AppError> {
     let new_message_id: i32 = query!(
         r#"
@@ -120,14 +178,15 @@ pub async fn create_new_message(
         msg_data.content
     )
     .fetch_one(pool)
-    .await?.chat_id;
+    .await?
+    .chat_id;
     Ok(new_message_id)
 }
 
 pub async fn get_messages_for_user(
     pool: &PgPool,
     paginator_req: MsgPaginatorQuery,
-    user_id: i32
+    user_id: i32,
 ) -> Result<Vec<Message>, AppError> {
     let messages = query_as!(
         Message,
@@ -147,8 +206,12 @@ pub async fn get_messages_for_user(
         ORDER BY m.created_at DESC
         LIMIT $3 OFFSET $4
         "#,
-        paginator_req.chat_id, user_id, paginator_req.limit, paginator_req.offset
-    ).fetch_all(pool)
-        .await?;
+        paginator_req.chat_id,
+        user_id,
+        paginator_req.limit,
+        paginator_req.offset
+    )
+    .fetch_all(pool)
+    .await?;
     Ok(messages)
 }

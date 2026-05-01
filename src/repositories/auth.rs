@@ -72,7 +72,7 @@ pub async fn register_new_user(
     pool: &PgPool,
     user_data: RegisterData,
 ) -> Result<(StatusCode, Json<Value>), AppError> {
-    // 1. Проверяем, не занят ли email
+    // Проверяем, не занят ли email
     let email_exists = query!(
         "SELECT id FROM messenger.users WHERE email = $1",
         user_data.email
@@ -88,7 +88,7 @@ pub async fn register_new_user(
         ));
     }
 
-    // 2. Если tag передан — проверяем, не занят ли он
+    // Если tag передан — проверяем, не занят ли он
     if let Some(tag) = &user_data.tag {
         let tag_exists = query!(
             "SELECT id FROM messenger.users WHERE tag = $1",
@@ -106,7 +106,7 @@ pub async fn register_new_user(
         }
     }
 
-    // 3. Валидация пароля
+    // Валидация пароля
     if user_data.password.len() < 8 {
         return Ok((
             StatusCode::BAD_REQUEST,
